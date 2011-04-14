@@ -1,0 +1,6 @@
+*.exe
+*.dll
+bin
+obj
+TestResults
+*.testsettings
