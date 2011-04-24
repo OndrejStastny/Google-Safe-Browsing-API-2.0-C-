@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Data.SqlClient;
-using System.Configuration;
 using System.Data;
 
 namespace Google.SafeBrowsing.Model
@@ -13,16 +12,25 @@ namespace Google.SafeBrowsing.Model
     /// </summary>
     public class SqlChunkRepository : IChunkRepository
     {
+        public string ConnectionString { get; set; }
+
+        public SqlChunkRepository(string connectionString)
+        {
+            ConnectionString = connectionString;
+        }
+
         public IEnumerable<Chunk> GetByKey(int key, bool isHost, bool isBlacklist)
         {
             var list = new List<Chunk>();
 
-            using (var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["Google.SafeBrowsing"].ConnectionString))
+            using (var conn = new SqlConnection(ConnectionString))
             {
+                conn.Open();
+
                 var cmd = new SqlCommand(
-                    @"SELECT ChunkId, List, IsBlackList, IsHost, Key 
+                    @"SELECT ChunkId, List, IsBlackList, IsHost, [Key]
                       FROM Chunks 
-                      WHERE Key = @Key 
+                      WHERE [Key] = @Key 
                         AND IsHost = @IsHost 
                         AND IsBlacklist = @IsBlacklist"
                     , conn);
@@ -55,8 +63,10 @@ namespace Google.SafeBrowsing.Model
 
         public void Save(IEnumerable<Chunk> Chunks)
         {
-            using (var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["Google.SafeBrowsing"].ConnectionString))
+            using (var conn = new SqlConnection(ConnectionString))
             {
+                conn.Open();
+
                 using (SqlTransaction tran = conn.BeginTransaction())
                 {
                     using (var rdr = new SqlChunkReader(Chunks))
@@ -67,10 +77,11 @@ namespace Google.SafeBrowsing.Model
                             inserter.DestinationTableName = "Chunks";
                             inserter.NotifyAfter = 0;
 
+                            inserter.ColumnMappings.Clear();
                             inserter.ColumnMappings.Add("ChunkId", "ChunkId");
                             inserter.ColumnMappings.Add("List", "List");
                             inserter.ColumnMappings.Add("IsBlackList", "IsBlackList");
-                            inserter.ColumnMappings.Add("IsHostKey", "IsHostKey");
+                            inserter.ColumnMappings.Add("IsHost", "IsHost");
                             inserter.ColumnMappings.Add("Key", "Key");
 
                             inserter.WriteToServer(rdr);
@@ -83,19 +94,26 @@ namespace Google.SafeBrowsing.Model
             }
         }
 
-        public void Delete(string list, IEnumerable<Interval> chunkIds)
+        public void Delete(string list, bool isBlacklist, IEnumerable<Interval> chunkIds)
         {
-            using (var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["Google.SafeBrowsing"].ConnectionString))
+            if (chunkIds.Count() < 1)
+                return;
+
+            using (var conn = new SqlConnection(ConnectionString))
             {
+                conn.Open();
+
                 using (SqlTransaction tran = conn.BeginTransaction())
                 {
-                    var cmd = new SqlCommand("DELETE FROM Chunks WHERE List = @List AND ChunkId >= @From AND @ChunkId <= @To", conn);
+                    var cmd = new SqlCommand("DELETE FROM Chunks WHERE List = @List AND IsBlackList = @IsBlackList AND ChunkId >= @From AND @ChunkId <= @To", conn);
 
                     cmd.Parameters.Add("@List", SqlDbType.NVarChar, 4);
+                    cmd.Parameters.Add("@IsBlackList", SqlDbType.Bit);
                     cmd.Parameters.Add("@From", SqlDbType.Int);
                     cmd.Parameters.Add("@To", SqlDbType.Int);
 
                     cmd.Parameters["@List"].Value = list.Substring(0, 4);
+                    cmd.Parameters["@IsBlackList"].Value = isBlacklist;
 
                     foreach (var interval in chunkIds)
                     {
@@ -114,13 +132,15 @@ namespace Google.SafeBrowsing.Model
         {
             var Chunks = new List<Interval>();
 
-            using (var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["Google.SafeBrowsing"].ConnectionString))
+            using (var conn = new SqlConnection(ConnectionString))
             {
-                var cmd = new SqlCommand("SELECT DISTINCT ChunkId FROM Chunks WHERE List = @List AND isWhitelist = @IsBlackList ORDER BY ChunkId ASC", conn);
-                cmd.Parameters.Add("@List", SqlDbType.NVarChar, 4);
+                conn.Open();
+
+                var cmd = new SqlCommand("SELECT DISTINCT ChunkId FROM Chunks WHERE List = @List AND IsBlackList = @IsBlackList ORDER BY ChunkId ASC", conn);
+                cmd.Parameters.Add("@List", SqlDbType.NVarChar, 5);
                 cmd.Parameters.Add("@IsBlackList", SqlDbType.Bit);
 
-                cmd.Parameters["@List"].Value = list.Substring(0, 4);
+                cmd.Parameters["@List"].Value = list.Substring(0, 5);
                 cmd.Parameters["@IsBlackList"].Value = isBlackList;
 
 

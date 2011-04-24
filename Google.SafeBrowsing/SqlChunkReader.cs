@@ -73,7 +73,7 @@ namespace Google.SafeBrowsing
                 case 3:
                     val = Enumerator.Current.IsBlackList;
                     break;
-                case 7:
+                case 4:
                     val = Enumerator.Current.Key;
                     break;
             }

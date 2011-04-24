@@ -20,7 +20,7 @@ namespace Google.SafeBrowsing.Model
         /// <summary>
         /// Delete item
         /// </summary>
-        void Delete(string list, IEnumerable<Interval> chunkIds);
+        void Delete(string list, bool isBlacklist, IEnumerable<Interval> chunkIds);
 
         /// <summary>
         /// List all chunk IDs for given black/white list

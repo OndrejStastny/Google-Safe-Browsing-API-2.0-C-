@@ -261,6 +261,8 @@ namespace Google.SafeBrowsing
 
             if (enmrtr.MoveNext())
                 sb.Append(listName + ':');
+            else
+                return String.Empty;
 
             while (true)
             {
