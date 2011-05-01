@@ -1,4 +1,4 @@
-Google Safe Browsing API v2.0 C#, release 0.1.0, Apr 03 2011
+Google Safe Browsing API v2.0 C#, release 0.2.0, May 01 2011
 -----------------------------------------------------------------
 
 https://github.com/OndrejStastny/Google-Safe-Browsing-API-2.0-C-
@@ -27,7 +27,7 @@ Only supports 32bit key sizes.
 3. RELEASE INFO
 ----------------
 
-This is the first release that is not yet ready for production. Protocol is
-roughly all implemented. Data persistence is not yet tested. More unit tests
-should be created to get better coverage. Missing functionality should be added
-soon.
+This is the first release that is not yet ready for production. There is still
+a bug in data persistence. Data are being duplicated and insert to DB fails.
+More unit tests should be created to get better coverage. Missing functionality 
+will be added soon.
